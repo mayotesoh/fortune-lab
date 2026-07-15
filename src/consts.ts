@@ -20,7 +20,7 @@ export const LINE_LABEL = 'LINEで相談する';
  * gas/README.md のセットアップ手順を参照。
  * 未設定（空文字）の場合、予約フォームは送信できず案内メッセージを表示します。
  */
-export const GAS_URL = '';
+export const GAS_URL = 'https://script.google.com/macros/s/AKfycbwuK4iLVY-fHX0suCp8fHrr5ljlO6qjq68ba8mb0HKHh6KBFND9iRpMK3FcA1etztZP/exec';
 
 /**
  * LIFF ID（LINE Developers コンソールで発行）
