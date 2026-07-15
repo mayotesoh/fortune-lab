@@ -1,6 +1,8 @@
 import { Client } from '@notionhq/client';
 import { NotionToMarkdown } from 'notion-to-md';
 import { marked } from 'marked';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // DB ID は機密ではないためコードに保持。トークンだけ環境変数（.env / CI Secret）。
 // ─────────────────────────────────────────────────────────
@@ -37,6 +39,28 @@ const pFile = (p: any) => {
 };
 const pRelIds = (p: any) => (p?.relation ?? []).map((r: any) => r.id);
 
+// ---- ローカル画像パス解決（base 付き。無ければ Notion の生URLにフォールバック）----
+// prebuild スクリプト（scripts/fetch-teller-images.mjs）が生成する pageId→ローカル画像
+// の対応表を読む。写真をサイト内に自前配信することで Notion 署名付きURLの失効
+// （＝リンク切れ）を防ぐ。未生成なら空 → Notion の生URLに自動フォールバック。
+const BASE = (import.meta.env.BASE_URL as string) || '/';
+const withBase = (p: string) =>
+  `${BASE.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+let imageMap: Record<string, string> = {};
+try {
+  // ビルドはプロジェクトルートで実行されるため cwd 基準で確実に読む
+  // （バンドル後は import.meta.url が別位置を指すため使わない）。
+  imageMap = JSON.parse(
+    fs.readFileSync(path.resolve(process.cwd(), 'src/data/teller-images.json'), 'utf-8')
+  );
+} catch {
+  // manifest 未生成（prebuild 未実行）— 生URLフォールバックで動作
+}
+const resolveImage = (pageId: string, files: any) => {
+  const local = imageMap[pageId];
+  return local ? withBase(local) : pFile(files);
+};
+
 // ---- 型 ----
 export interface Teller {
   pageId: string;
@@ -49,6 +73,9 @@ export interface Teller {
   image: string;
   arts: string[];
   styles: string[];
+  styleDesc: string;
+  specialties: string[];
+  schedule: string;
   price: string;
   order: number;
 }
@@ -104,9 +131,12 @@ export function getTellers(): Promise<Teller[]> {
           role: pText(p['肩書き']),
           catch: pText(p['キャッチコピー']),
           intro: pText(p['紹介文']),
-          image: pFile(p['顔写真']),
+          image: resolveImage(r.id, p['顔写真']),
           arts: pMulti(p['占術']),
           styles: pMulti(p['鑑定スタイル']),
+          styleDesc: pText(p['鑑定スタイル説明']),
+          specialties: pMulti(p['得意相談']),
+          schedule: pText(p['受付時間']),
           price: pText(p['料金目安']),
           order: pNumber(p['表示順']),
         } as Teller;

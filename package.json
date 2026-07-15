@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
+    "images": "node scripts/fetch-teller-images.mjs",
+    "prebuild": "node scripts/fetch-teller-images.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"

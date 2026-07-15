@@ -34,3 +34,11 @@ HANDOFF.md
 
 # stray Next.js build artifacts (not used by Astro)
 .next/
+
+# 占い師画像は prebuild（scripts/fetch-teller-images.mjs）がビルド時に生成する。
+# Notion からダウンロード＆仮画像を作り直すので、コミットしない。
+public/teller-images/
+src/data/teller-images.json
+
+# 一時調査スクリプト
+scripts/_*

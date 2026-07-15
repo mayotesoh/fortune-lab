@@ -21,6 +21,17 @@ const fmtDate = (d: Date) =>
 
 const posts = (await getPosts()).filter((p) => p.authorId === teller.id);
 const hasBody = html && html.trim().length > 0;
+
+// 鑑定スタイルは説明文があれば優先、無ければ multi_select を連結
+const styleText = teller.styleDesc || teller.styles.join(' / ');
+
+// プロフィール表示行（チラシの並び：占術→得意相談→鑑定スタイル→受付時間）
+const rows = [
+  { icon: '🔮', label: 'メイン占術', values: teller.arts },
+  { icon: '💬', label: '得意相談', values: teller.specialties },
+  { icon: '🤝', label: '鑑定スタイル', text: styleText },
+  { icon: '🕐', label: '受付時間', text: teller.schedule },
+].filter((r) => (r.values && r.values.length > 0) || (r.text && r.text.length > 0));
 ---
 
 <Layout
@@ -31,55 +42,67 @@ const hasBody = html && html.trim().length > 0;
     <div class="container">
       <a class="back" href={link('/tellers')}>← 占い師一覧へ</a>
 
-      <div class="profile">
+      <div class="profile-card">
         <div class="photo">
+          <span class="corner tl">✦</span>
+          <span class="corner tr">✦</span>
+          <span class="corner bl">✦</span>
+          <span class="corner br">✦</span>
+          <div class="photo-frame">
+            <img src={teller.image} alt={`${teller.name}の宣材写真`} />
+          </div>
+        </div>
+
+        <div class="info">
           {
-            teller.image ? (
-              <img src={teller.image} alt={`${teller.name}の写真`} />
-            ) : (
-              <span class="noimg">☾</span>
+            teller.catch && (
+              <p class="catch">
+                <span class="catch-star">✦</span>
+                {teller.catch}
+              </p>
             )
           }
-        </div>
-        <div class="info">
-          {teller.catch && <p class="catch">{teller.catch}</p>}
-          <h1 class="name">
-            {teller.name}
-            {teller.kana && <span class="kana">{teller.kana}</span>}
-          </h1>
-          {teller.role && <p class="role">{teller.role}</p>}
 
-          <dl class="meta">
+          <div class="name-plate">
+            <h1 class="name">{teller.name}</h1>
+            {teller.kana && <span class="kana">{teller.kana}</span>}
+            {teller.role && <span class="role">{teller.role}</span>}
+          </div>
+
+          <dl class="spec">
             {
-              teller.styles.length > 0 && (
-                <div class="meta-row">
-                  <dt>鑑定スタイル</dt>
-                  <dd>{teller.styles.join(' / ')}</dd>
+              rows.map((r) => (
+                <div class="spec-row">
+                  <dt class="spec-label">
+                    <span class="spec-icon">{r.icon}</span>
+                    {r.label}
+                  </dt>
+                  <dd class="spec-value">
+                    {r.values ? (
+                      <span class="chips">
+                        {r.values.map((v) => (
+                          <span class="chip">{v}</span>
+                        ))}
+                      </span>
+                    ) : (
+                      r.text
+                    )}
+                  </dd>
                 </div>
-              )
+              ))
             }
             {
               teller.price && (
-                <div class="meta-row">
-                  <dt>料金目安</dt>
-                  <dd>{teller.price}</dd>
+                <div class="spec-row">
+                  <dt class="spec-label">
+                    <span class="spec-icon">🎫</span>
+                    料金目安
+                  </dt>
+                  <dd class="spec-value">{teller.price}</dd>
                 </div>
               )
             }
           </dl>
-
-          {
-            teller.arts.length > 0 && (
-              <>
-                <h2 class="arts-title">得意な占術</h2>
-                <ul class="arts">
-                  {teller.arts.map((a) => (
-                    <li>{a}</li>
-                  ))}
-                </ul>
-              </>
-            )
-          }
 
           <a class="btn btn-primary reserve-btn" href={link(`/reserve?teller=${teller.id}`)}>
             {teller.name} に鑑定を予約する
@@ -121,48 +144,99 @@ const hasBody = html && html.trim().length > 0;
     font-size: 0.9rem;
     margin-bottom: 1.5rem;
   }
-  .profile {
+  /* ── プロフィールカード（チラシ風） ── */
+  .profile-card {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 320px 1fr;
     gap: 2.5rem;
-    max-width: 920px;
+    max-width: 960px;
     margin-inline: auto;
+    padding: 1.75rem;
+    border-radius: 24px;
+    border: 1px solid var(--color-border);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(124, 92, 191, 0.1), transparent 45%),
+      radial-gradient(circle at 95% 100%, rgba(201, 162, 39, 0.1), transparent 45%),
+      var(--color-surface);
+    box-shadow: var(--shadow);
     align-items: start;
   }
+
+  /* 宣材写真：楕円＋発光する紫の縁取り */
   .photo {
-    aspect-ratio: 1 / 1;
-    border-radius: var(--radius);
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    background: linear-gradient(160deg, var(--color-night), var(--color-night-2));
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
     position: sticky;
     top: 84px;
+    padding: 10px;
   }
-  .photo img {
+  .photo-frame {
+    aspect-ratio: 3 / 4;
+    border-radius: 48% / 40%;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--color-night), var(--color-night-2));
+    border: 3px solid rgba(124, 92, 191, 0.55);
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.6),
+      0 0 28px rgba(124, 92, 191, 0.45),
+      var(--shadow);
+  }
+  .photo-frame img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
   }
-  .noimg {
-    font-size: 4rem;
+  .corner {
+    position: absolute;
+    color: var(--color-accent);
+    font-size: 1rem;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+  .corner.tl { top: -2px; left: -2px; }
+  .corner.tr { top: -2px; right: -2px; }
+  .corner.bl { bottom: -2px; left: -2px; }
+  .corner.br { bottom: -2px; right: -2px; }
+
+  /* キャッチコピー：リボン風バナー */
+  .catch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, rgba(124, 92, 191, 0.16), rgba(201, 162, 39, 0.16));
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    color: var(--color-primary-soft);
+    font-weight: 700;
+    font-size: 0.98rem;
+    margin-bottom: 1rem;
+  }
+  .catch-star {
     color: var(--color-accent);
   }
-  .catch {
-    color: var(--color-accent-soft);
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-  }
-  .name {
-    font-size: 1.8rem;
-    margin-bottom: 0.4rem;
+
+  /* 名前プレート */
+  .name-plate {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 0.6rem;
+    gap: 0.7rem;
+    padding: 0.6rem 1.1rem;
+    margin-bottom: 1.4rem;
+    border-radius: 14px;
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    position: relative;
+  }
+  .name-plate::before {
+    content: '✧';
+    color: var(--color-accent);
+    font-size: 1.1rem;
+  }
+  .name {
+    font-size: clamp(1.7rem, 3.5vw, 2.2rem);
+    line-height: 1.2;
   }
   .kana {
     font-family: var(--font-sans);
@@ -171,47 +245,63 @@ const hasBody = html && html.trim().length > 0;
     color: var(--color-text-muted);
   }
   .role {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
     color: var(--color-primary-soft);
-    margin-bottom: 1.2rem;
+    margin-left: auto;
   }
-  .meta {
+
+  /* スペック行（占術／得意相談／鑑定スタイル／受付時間） */
+  .spec {
     display: grid;
-    gap: 0.5rem;
-    margin-bottom: 1.4rem;
+    gap: 0.7rem;
+    margin-bottom: 1.6rem;
   }
-  .meta-row {
+  .spec-row {
+    display: grid;
+    grid-template-columns: 9.5em 1fr;
+    align-items: stretch;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+  .spec-label {
     display: flex;
-    gap: 0.8rem;
-    font-size: 0.92rem;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.8rem;
+    background: linear-gradient(135deg, rgba(124, 92, 191, 0.12), rgba(124, 92, 191, 0.05));
+    color: var(--color-primary-soft);
+    font-weight: 700;
+    font-size: 0.86rem;
+    border-right: 1px solid var(--color-border);
   }
-  .meta-row dt {
-    flex: 0 0 6.5em;
-    color: var(--color-text-muted);
-    font-weight: 600;
-  }
-  .meta-row dd {
-    color: var(--color-text);
-  }
-  .arts-title {
+  .spec-icon {
     font-size: 1.05rem;
-    color: var(--color-accent-soft);
-    margin-bottom: 0.8rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--color-border);
+    line-height: 1;
   }
-  .arts {
-    list-style: none;
+  .spec-value {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.6rem 0.9rem;
+    color: var(--color-text);
+    font-size: 0.94rem;
+    line-height: 1.6;
+  }
+  .chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.8rem;
+    gap: 0.4rem;
   }
-  .arts li {
+  .chip {
     background: var(--color-bg-soft);
     border: 1px solid var(--color-border);
     border-radius: 999px;
-    padding: 0.3rem 0.9rem;
-    font-size: 0.85rem;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.82rem;
     color: var(--color-text);
   }
   .reserve-btn {
@@ -298,14 +388,30 @@ const hasBody = html && html.trim().length > 0;
   }
 
   @media (max-width: 720px) {
-    .profile {
+    .profile-card {
       grid-template-columns: 1fr;
       gap: 1.75rem;
+      padding: 1.25rem;
     }
     .photo {
-      max-width: 280px;
+      max-width: 260px;
       margin-inline: auto;
       position: static;
+    }
+    .spec-row {
+      grid-template-columns: 8em 1fr;
+    }
+    .role {
+      margin-left: 0;
+    }
+  }
+  @media (max-width: 460px) {
+    .spec-row {
+      grid-template-columns: 1fr;
+    }
+    .spec-label {
+      border-right: none;
+      border-bottom: 1px solid var(--color-border);
     }
   }
 </style>
