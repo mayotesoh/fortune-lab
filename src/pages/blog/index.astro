@@ -1,0 +1,131 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPosts } from '../../lib/notion';
+
+const base = import.meta.env.BASE_URL;
+const link = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+const fmtDate = (d: Date) =>
+  `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+
+const posts = await getPosts();
+---
+
+<Layout
+  title="ブログ｜Fortune Lab"
+  description="Fortune Lab の占い師が綴る、占いの学びと日々の気づき。運勢のヒントをお届けします。"
+>
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title"><span class="mark">☾</span> ブログ</h1>
+      <p class="section-lead">Fortune Lab の占い師が綴る、運勢のヒントと気づき</p>
+
+      {
+        posts.length === 0 ? (
+          <p class="empty">まだ記事がありません。まもなく公開します。</p>
+        ) : (
+          <ul class="post-list">
+            {posts.map((post) => (
+              <li class="post-card">
+                <a class="post-link" href={link(`/blog/${post.slug}`)}>
+                  {post.cover && (
+                    <div class="post-cover">
+                      <img src={post.cover} alt="" loading="lazy" />
+                    </div>
+                  )}
+                  <div class="post-body">
+                    <div class="post-meta">
+                      <span class="post-date">{fmtDate(post.publishDate)}</span>
+                      {post.authorName && (
+                        <span class="post-author">{post.authorName}</span>
+                      )}
+                    </div>
+                    <h2 class="post-title">{post.title}</h2>
+                    {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+                    {post.tags.length > 0 && (
+                      <ul class="post-tags">
+                        {post.tags.map((t) => (
+                          <li>#{t}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .section-title .mark {
+    color: var(--color-accent);
+  }
+  .empty {
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+  .post-list {
+    list-style: none;
+    display: grid;
+    gap: 1.5rem;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+  .post-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  .post-link {
+    display: block;
+    color: inherit;
+  }
+  .post-cover img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+  }
+  .post-body {
+    padding: 1.5rem 1.75rem;
+  }
+  .post-meta {
+    display: flex;
+    gap: 0.9rem;
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .post-author::before {
+    content: '☾ ';
+    color: var(--color-accent);
+  }
+  .post-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+  }
+  .post-excerpt {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 0.9rem;
+  }
+  .post-tags {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .post-tags li {
+    font-size: 0.8rem;
+    color: var(--color-accent-soft);
+  }
+</style>

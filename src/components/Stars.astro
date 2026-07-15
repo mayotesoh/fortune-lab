@@ -1,0 +1,63 @@
+---
+// 夜空パネルの中に散りばめる、またたく星の装飾レイヤー。
+// 親要素は position: relative（.night が該当）にしておくこと。
+const stars = [
+  { top: '12%', left: '8%', s: 2, d: '0s' },
+  { top: '22%', left: '78%', s: 3, d: '1.2s' },
+  { top: '38%', left: '30%', s: 2, d: '0.6s' },
+  { top: '18%', left: '52%', s: 2, d: '2.1s' },
+  { top: '62%', left: '14%', s: 3, d: '0.3s' },
+  { top: '72%', left: '64%', s: 2, d: '1.7s' },
+  { top: '48%', left: '88%', s: 2, d: '2.6s' },
+  { top: '82%', left: '40%', s: 3, d: '0.9s' },
+  { top: '30%', left: '68%', s: 2, d: '3.1s' },
+  { top: '58%', left: '48%', s: 2, d: '1.4s' },
+  { top: '14%', left: '34%', s: 2, d: '2.4s' },
+  { top: '86%', left: '84%', s: 2, d: '0.7s' },
+];
+---
+
+<div class="stars" aria-hidden="true">
+  {
+    stars.map((st) => (
+      <span
+        class="star"
+        style={`top:${st.top};left:${st.left};width:${st.s}px;height:${st.s}px;animation-delay:${st.d};`}
+      />
+    ))
+  }
+</div>
+
+<style>
+  .stars {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.7);
+    opacity: 0.85;
+    animation: twinkle 3.4s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.8);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .star {
+      animation: none;
+      opacity: 0.7;
+    }
+  }
+</style>

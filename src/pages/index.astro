@@ -1,0 +1,428 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Stars from '../components/Stars.astro';
+import { getTellers, getPosts } from '../lib/notion';
+import { SITE_TAGLINE, MENU_TYPES } from '../consts';
+
+const base = import.meta.env.BASE_URL;
+const link = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+const fmtDate = (d: Date) =>
+  `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+
+const tellers = (await getTellers()).slice(0, 3);
+const posts = (await getPosts()).slice(0, 3);
+
+const menus = [
+  { icon: '🔮', title: '対面鑑定', desc: '直接お会いして、じっくりと向き合う鑑定。' },
+  { icon: '💻', title: 'オンライン鑑定', desc: 'ビデオ通話で、ご自宅から気軽にご相談。' },
+  { icon: '☎️', title: '電話鑑定', desc: '声だけで、素直な気持ちをお話しください。' },
+  { icon: '💬', title: 'チャット鑑定', desc: '文字でゆっくり、あなたのペースで。' },
+];
+
+const steps = [
+  { no: '01', title: '占い師を選ぶ', desc: '占い師一覧からお好みの占い師と占術を選びます。' },
+  { no: '02', title: '予約する', desc: '予約フォームから、鑑定メニューと希望日時を送信。' },
+  { no: '03', title: '鑑定を受ける', desc: 'ご予約日時に鑑定。運命の扉を開きましょう。' },
+];
+---
+
+<Layout>
+  <!-- Hero（夜空） -->
+  <section class="hero night on-night">
+    <Stars />
+    <div class="container hero-inner">
+      <p class="hero-eyebrow">オンライン占い館</p>
+      <h1 class="hero-title">
+        あなたの運命を、<br />そっと照らす場所。
+      </h1>
+      <p class="hero-lead">
+        Fortune Lab（フォーチュンラボ）は、確かな実力をもつ占い師が集うオンライン占い館。<br />
+        タロット、星占い、霊視…あなたの悩みに寄り添う占い師がきっと見つかります。
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-gold" href={link('/tellers')}>占い師を探す</a>
+        <a class="btn btn-ghost" href={link('/reserve')}>鑑定を予約する</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 鑑定メニュー -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">鑑定<span class="mark">メニュー</span></h2>
+      <p class="section-lead">あなたに合ったスタイルで、占い師とつながれます</p>
+      <div class="menu-grid">
+        {
+          menus.map((m) => (
+            <article class="card">
+              <span class="card-icon">{m.icon}</span>
+              <h3>{m.title}</h3>
+              <p>{m.desc}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- 占い師 -->
+  <section class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">在籍<span class="mark">占い師</span></h2>
+      <p class="section-lead">Fortune Lab で活躍する占い師たち</p>
+
+      {
+        tellers.length === 0 ? (
+          <p class="empty">占い師は準備中です。まもなく公開します。</p>
+        ) : (
+          <div class="teller-grid">
+            {tellers.map((t) => (
+              <a class="teller-card" href={link(`/tellers/${t.id}`)}>
+                <div class="teller-photo">
+                  {t.image ? (
+                    <img src={t.image} alt={`${t.name}の写真`} loading="lazy" />
+                  ) : (
+                    <span class="teller-noimg">☾</span>
+                  )}
+                </div>
+                <div class="teller-body">
+                  {t.catch && <p class="teller-catch">{t.catch}</p>}
+                  <h3 class="teller-name">{t.name}</h3>
+                  {t.role && <p class="teller-role">{t.role}</p>}
+                  {t.arts.length > 0 && (
+                    <ul class="teller-arts">
+                      {t.arts.slice(0, 4).map((a) => (
+                        <li>{a}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        )
+      }
+      <div class="center-more">
+        <a class="btn btn-primary" href={link('/tellers')}>占い師一覧を見る →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 予約の流れ -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">ご予約の<span class="mark">流れ</span></h2>
+      <p class="section-lead">3ステップでかんたんに鑑定をご予約いただけます</p>
+      <div class="step-grid">
+        {
+          steps.map((s) => (
+            <article class="step">
+              <span class="step-no">{s.no}</span>
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ブログ -->
+  {
+    posts.length > 0 && (
+      <section class="section section-alt">
+        <div class="container">
+          <h2 class="section-title">占い師の<span class="mark">ブログ</span></h2>
+          <p class="section-lead">占い師が綴る、日々の気づきと運勢のヒント</p>
+          <ul class="post-list">
+            {posts.map((post) => (
+              <li class="post-card">
+                <a class="post-link" href={link(`/blog/${post.slug}`)}>
+                  {post.cover && (
+                    <div class="post-cover">
+                      <img src={post.cover} alt="" loading="lazy" />
+                    </div>
+                  )}
+                  <div class="post-body">
+                    <div class="post-meta">
+                      <span>{fmtDate(post.publishDate)}</span>
+                      {post.authorName && <span class="post-author">{post.authorName}</span>}
+                    </div>
+                    <h3 class="post-title">{post.title}</h3>
+                    {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div class="center-more">
+            <a class="btn btn-primary" href={link('/blog')}>ブログ一覧を見る →</a>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- CTA（夜空） -->
+  <section class="cta night on-night">
+    <Stars />
+    <div class="container cta-inner">
+      <h2>その悩み、占い師に話してみませんか。</h2>
+      <p>{SITE_TAGLINE}。あなたにぴったりの占い師が待っています。</p>
+      <div class="cta-actions">
+        <a class="btn btn-gold" href={link('/reserve')}>鑑定を予約する</a>
+        <a class="btn btn-ghost" href={link('/tellers')}>占い師を探す</a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* Hero */
+  .hero {
+    padding-block: 6.5rem 5.5rem;
+    text-align: center;
+  }
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+  }
+  .hero-eyebrow {
+    color: var(--color-accent);
+    letter-spacing: 0.28em;
+    font-size: 0.82rem;
+    margin-bottom: 1.2rem;
+  }
+  .hero-title {
+    font-size: clamp(2.1rem, 6.2vw, 3.5rem);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.03em;
+  }
+  .hero-lead {
+    color: var(--color-night-muted);
+    max-width: 640px;
+    margin-inline: auto;
+    margin-bottom: 2.5rem;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .section-alt {
+    background: var(--color-bg-soft);
+    border-block: 1px solid var(--color-border);
+  }
+  .empty {
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+  .center-more {
+    text-align: center;
+    margin-top: 2.5rem;
+  }
+
+  /* 鑑定メニュー */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1.5rem;
+  }
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.8rem;
+    text-align: center;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow);
+  }
+  .card-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.7rem;
+  }
+  .card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.12rem;
+  }
+  .card p {
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+  }
+
+  /* 占い師カード */
+  .teller-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  .teller-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .teller-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+    color: inherit;
+  }
+  .teller-photo {
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(160deg, var(--color-night), var(--color-night-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .teller-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .teller-noimg {
+    font-size: 2.5rem;
+    color: var(--color-accent);
+  }
+  .teller-body {
+    padding: 1.3rem 1.4rem 1.5rem;
+  }
+  .teller-catch {
+    color: var(--color-accent-soft);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .teller-name {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  .teller-role {
+    color: var(--color-primary-soft);
+    font-size: 0.9rem;
+    margin-bottom: 0.9rem;
+  }
+  .teller-arts {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .teller-arts li {
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.78rem;
+    color: var(--color-text);
+  }
+
+  /* ステップ */
+  .step-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  .step {
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .step-no {
+    font-family: var(--font-serif);
+    font-size: 2.4rem;
+    color: var(--color-accent);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .step h3 {
+    margin-bottom: 0.5rem;
+  }
+  .step p {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  /* ブログ */
+  .post-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+  .post-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  .post-link {
+    display: block;
+    color: inherit;
+  }
+  .post-cover img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+  }
+  .post-body {
+    padding: 1.3rem 1.4rem;
+  }
+  .post-meta {
+    display: flex;
+    gap: 0.9rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .post-author::before {
+    content: '☾ ';
+    color: var(--color-accent);
+  }
+  .post-title {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+  }
+  .post-excerpt {
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+  }
+
+  /* CTA */
+  .cta {
+    padding-block: 5rem;
+    text-align: center;
+  }
+  .cta-inner {
+    position: relative;
+    z-index: 1;
+  }
+  .cta-inner h2 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin-bottom: 1rem;
+  }
+  .cta-inner p {
+    color: var(--color-night-muted);
+    margin-bottom: 2rem;
+  }
+  .cta-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>

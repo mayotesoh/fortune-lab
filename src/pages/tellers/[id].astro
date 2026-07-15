@@ -1,0 +1,311 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getTellers, getTellerHtml, getPosts } from '../../lib/notion';
+
+export async function getStaticPaths() {
+  const tellers = await getTellers();
+  return Promise.all(
+    tellers.map(async (teller) => ({
+      params: { id: teller.id },
+      props: { teller, html: await getTellerHtml(teller.id) },
+    }))
+  );
+}
+
+const { teller, html } = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+const link = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+const fmtDate = (d: Date) =>
+  `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+
+const posts = (await getPosts()).filter((p) => p.authorId === teller.id);
+const hasBody = html && html.trim().length > 0;
+---
+
+<Layout
+  title={`${teller.name}｜Fortune Lab`}
+  description={`${teller.name}（${teller.role}）のプロフィール。${teller.catch}`}
+>
+  <article class="section">
+    <div class="container">
+      <a class="back" href={link('/tellers')}>← 占い師一覧へ</a>
+
+      <div class="profile">
+        <div class="photo">
+          {
+            teller.image ? (
+              <img src={teller.image} alt={`${teller.name}の写真`} />
+            ) : (
+              <span class="noimg">☾</span>
+            )
+          }
+        </div>
+        <div class="info">
+          {teller.catch && <p class="catch">{teller.catch}</p>}
+          <h1 class="name">
+            {teller.name}
+            {teller.kana && <span class="kana">{teller.kana}</span>}
+          </h1>
+          {teller.role && <p class="role">{teller.role}</p>}
+
+          <dl class="meta">
+            {
+              teller.styles.length > 0 && (
+                <div class="meta-row">
+                  <dt>鑑定スタイル</dt>
+                  <dd>{teller.styles.join(' / ')}</dd>
+                </div>
+              )
+            }
+            {
+              teller.price && (
+                <div class="meta-row">
+                  <dt>料金目安</dt>
+                  <dd>{teller.price}</dd>
+                </div>
+              )
+            }
+          </dl>
+
+          {
+            teller.arts.length > 0 && (
+              <>
+                <h2 class="arts-title">得意な占術</h2>
+                <ul class="arts">
+                  {teller.arts.map((a) => (
+                    <li>{a}</li>
+                  ))}
+                </ul>
+              </>
+            )
+          }
+
+          <a class="btn btn-primary reserve-btn" href={link(`/reserve?teller=${teller.id}`)}>
+            {teller.name} に鑑定を予約する
+          </a>
+        </div>
+      </div>
+
+      {teller.intro && <p class="intro">{teller.intro}</p>}
+
+      {hasBody && <div class="prose" set:html={html} />}
+
+      {
+        posts.length > 0 && (
+          <section class="teller-posts">
+            <h2 class="posts-title">
+              <span class="mark">☾</span> {teller.name} のブログ記事
+            </h2>
+            <ul class="post-list">
+              {posts.map((post) => (
+                <li class="post-card">
+                  <a class="post-link" href={link(`/blog/${post.slug}`)}>
+                    <span class="post-date">{fmtDate(post.publishDate)}</span>
+                    <h3 class="post-title">{post.title}</h3>
+                    {post.excerpt && <p class="post-excerpt">{post.excerpt}</p>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .back {
+    display: inline-block;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  .profile {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2.5rem;
+    max-width: 920px;
+    margin-inline: auto;
+    align-items: start;
+  }
+  .photo {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: linear-gradient(160deg, var(--color-night), var(--color-night-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    top: 84px;
+  }
+  .photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .noimg {
+    font-size: 4rem;
+    color: var(--color-accent);
+  }
+  .catch {
+    color: var(--color-accent-soft);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .name {
+    font-size: 1.8rem;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .kana {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+  .role {
+    color: var(--color-primary-soft);
+    margin-bottom: 1.2rem;
+  }
+  .meta {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.4rem;
+  }
+  .meta-row {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 0.92rem;
+  }
+  .meta-row dt {
+    flex: 0 0 6.5em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+  .meta-row dd {
+    color: var(--color-text);
+  }
+  .arts-title {
+    font-size: 1.05rem;
+    color: var(--color-accent-soft);
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .arts {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.8rem;
+  }
+  .arts li {
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.85rem;
+    color: var(--color-text);
+  }
+  .reserve-btn {
+    display: inline-block;
+  }
+  .intro {
+    max-width: 760px;
+    margin: 2.5rem auto 0;
+    color: var(--color-text);
+    line-height: 1.9;
+  }
+
+  .prose {
+    max-width: 760px;
+    margin: 2rem auto 0;
+    line-height: 1.9;
+  }
+  .prose :global(h2) {
+    font-size: 1.3rem;
+    margin: 2rem 0 0.9rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .prose :global(h3) {
+    font-size: 1.12rem;
+    margin: 1.6rem 0 0.6rem;
+  }
+  .prose :global(p) {
+    margin-bottom: 1.1rem;
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 1.1rem 1.4rem;
+  }
+  .prose :global(img) {
+    max-width: 100%;
+    border-radius: var(--radius);
+  }
+
+  .teller-posts {
+    max-width: 760px;
+    margin: 3.5rem auto 0;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .posts-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+  .posts-title .mark {
+    color: var(--color-accent);
+  }
+  .post-list {
+    list-style: none;
+    display: grid;
+    gap: 1.1rem;
+  }
+  .post-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+  }
+  .post-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  .post-link {
+    display: block;
+    padding: 1.3rem 1.5rem;
+    color: inherit;
+  }
+  .post-date {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+  }
+  .post-title {
+    font-size: 1.15rem;
+    margin: 0.35rem 0 0.5rem;
+  }
+  .post-excerpt {
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+  }
+
+  @media (max-width: 720px) {
+    .profile {
+      grid-template-columns: 1fr;
+      gap: 1.75rem;
+    }
+    .photo {
+      max-width: 280px;
+      margin-inline: auto;
+      position: static;
+    }
+  }
+</style>

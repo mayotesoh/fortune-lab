@@ -1,0 +1,100 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { LINE_URL, SITE_NAME, SITE_TAGLINE } from '../consts';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = `${SITE_NAME}｜${SITE_TAGLINE}`,
+  description =
+    'Fortune Lab（フォーチュンラボ）は、実力ある占い師が在籍するオンライン占い館です。占い師の紹介・ブログ・鑑定のご予約はこちらから。',
+} = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${base.replace(/\/$/, '')}/favicon.svg`} />
+    <meta name="generator" content={Astro.generator} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+
+    {
+      LINE_URL && (
+        <a
+          class="line-fab"
+          href={LINE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="LINEで相談"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3C6.48 3 2 6.6 2 11.02c0 2.55 1.5 4.8 3.86 6.25-.17.6-.62 2.2-.71 2.54-.11.42.16.41.33.3.14-.09 2.16-1.43 3.04-2.02.78.11 1.59.17 2.48.17 5.52 0 10-3.6 10-8.04C21 6.6 17.52 3 12 3z" />
+          </svg>
+          <span>LINEで相談</span>
+        </a>
+      )
+    }
+
+    <style>
+      .line-fab {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 60;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #06c755;
+        color: #fff;
+        padding: 0.7rem 1.2rem;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        box-shadow: 0 6px 20px rgba(6, 199, 85, 0.4);
+        transition: transform 0.15s ease, background 0.2s ease;
+      }
+      .line-fab:hover {
+        color: #fff;
+        background: #05b34c;
+        transform: translateY(-2px);
+      }
+      .line-fab svg {
+        width: 1.4em;
+        height: 1.4em;
+        fill: currentColor;
+      }
+      @media (max-width: 640px) {
+        .line-fab span {
+          display: none;
+        }
+        .line-fab {
+          padding: 0.85rem;
+        }
+        .line-fab svg {
+          width: 1.6em;
+          height: 1.6em;
+        }
+      }
+    </style>
+  </body>
+</html>

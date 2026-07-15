@@ -1,0 +1,180 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getTellers } from '../../lib/notion';
+
+const base = import.meta.env.BASE_URL;
+const link = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+
+const tellers = await getTellers();
+---
+
+<Layout
+  title="占い師一覧｜Fortune Lab"
+  description="Fortune Lab（フォーチュンラボ）に在籍する占い師の一覧です。得意占術や鑑定スタイルから、あなたに合う占い師を見つけてください。"
+>
+  <section class="section">
+    <div class="container">
+      <h1 class="section-title">占い師<span class="mark">一覧</span></h1>
+      <p class="section-lead">あなたの悩みに寄り添う占い師を見つけましょう</p>
+
+      {
+        tellers.length === 0 ? (
+          <p class="empty">
+            占い師は現在準備中です。まもなく公開いたしますので、少々お待ちください。
+          </p>
+        ) : (
+          <div class="teller-grid">
+            {tellers.map((t) => (
+              <a class="teller-card" href={link(`/tellers/${t.id}`)}>
+                <div class="teller-photo">
+                  {t.image ? (
+                    <img src={t.image} alt={`${t.name}の写真`} loading="lazy" />
+                  ) : (
+                    <span class="teller-noimg">☾</span>
+                  )}
+                </div>
+                <div class="teller-body">
+                  {t.catch && <p class="teller-catch">{t.catch}</p>}
+                  <h2 class="teller-name">
+                    {t.name}
+                    {t.kana && <span class="teller-kana">{t.kana}</span>}
+                  </h2>
+                  {t.role && <p class="teller-role">{t.role}</p>}
+                  {t.styles.length > 0 && (
+                    <p class="teller-styles">
+                      {t.styles.map((s) => (
+                        <span class="style-chip">{s}</span>
+                      ))}
+                    </p>
+                  )}
+                  {t.arts.length > 0 && (
+                    <ul class="teller-arts">
+                      {t.arts.slice(0, 5).map((a) => (
+                        <li>{a}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <span class="teller-more">プロフィールを見る →</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    max-width: 520px;
+    margin-inline: auto;
+  }
+  .teller-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.75rem;
+    max-width: 920px;
+    margin-inline: auto;
+  }
+  .teller-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .teller-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+    color: inherit;
+  }
+  .teller-photo {
+    aspect-ratio: 4 / 3;
+    background: linear-gradient(160deg, var(--color-night), var(--color-night-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .teller-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .teller-noimg {
+    font-size: 2.8rem;
+    color: var(--color-accent);
+  }
+  .teller-body {
+    padding: 1.4rem 1.5rem 1.6rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .teller-catch {
+    color: var(--color-accent-soft);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .teller-name {
+    font-size: 1.3rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .teller-kana {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+  .teller-role {
+    color: var(--color-primary-soft);
+    font-size: 0.9rem;
+    margin-bottom: 0.7rem;
+  }
+  .teller-styles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.7rem;
+  }
+  .style-chip {
+    background: linear-gradient(135deg, rgba(124, 92, 191, 0.14), rgba(201, 162, 39, 0.14));
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.15rem 0.7rem;
+    font-size: 0.76rem;
+    color: var(--color-primary-soft);
+  }
+  .teller-arts {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+  .teller-arts li {
+    background: var(--color-bg-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.78rem;
+    color: var(--color-text);
+  }
+  .teller-more {
+    margin-top: auto;
+    color: var(--color-accent-soft);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+</style>

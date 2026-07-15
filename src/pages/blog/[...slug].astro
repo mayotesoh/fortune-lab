@@ -1,0 +1,182 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPosts, getPostHtml } from '../../lib/notion';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return Promise.all(
+    posts.map(async (post) => ({
+      params: { slug: post.slug },
+      props: { post, html: await getPostHtml(post.slug) },
+    }))
+  );
+}
+
+const { post, html } = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+const link = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+const fmtDate = (d: Date) =>
+  `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+---
+
+<Layout title={`${post.title}｜Fortune Lab`} description={post.excerpt}>
+  <article class="section">
+    <div class="container narrow">
+      <a class="back" href={link('/blog')}>← ブログ一覧へ</a>
+
+      <div class="article-meta">
+        <span class="date">{fmtDate(post.publishDate)}</span>
+        {post.tags.map((t) => <span class="tag">#{t}</span>)}
+      </div>
+      <h1 class="article-title">{post.title}</h1>
+
+      {
+        post.authorId && (
+          <a class="author-chip" href={link(`/blog/author/${post.authorId}`)}>
+            {post.authorImage ? (
+              <img src={post.authorImage} alt={`${post.authorName}の写真`} />
+            ) : (
+              <span class="author-noimg">☾</span>
+            )}
+            <span class="author-name">{post.authorName}</span>
+          </a>
+        )
+      }
+
+      {
+        post.cover && (
+          <div class="article-cover">
+            <img src={post.cover} alt="" />
+          </div>
+        )
+      }
+
+      <div class="prose" set:html={html} />
+
+      {
+        post.authorId && (
+          <div class="author-more">
+            <a class="btn btn-ghost" href={link(`/blog/author/${post.authorId}`)}>
+              {post.authorName} の記事をもっと見る
+            </a>
+            <a class="btn btn-primary" href={link(`/tellers/${post.authorId}`)}>
+              {post.authorName} に鑑定を予約する
+            </a>
+          </div>
+        )
+      }
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .narrow {
+    max-width: 720px;
+  }
+  .back {
+    display: inline-block;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .article-meta .tag {
+    color: var(--color-accent-soft);
+  }
+  .article-title {
+    font-size: clamp(1.5rem, 4.5vw, 2.1rem);
+    margin-bottom: 1.5rem;
+  }
+  .author-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: inherit;
+    margin-bottom: 2rem;
+  }
+  .author-chip img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+  }
+  .author-noimg {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, var(--color-night), var(--color-night-2));
+    color: var(--color-accent);
+    border: 1px solid var(--color-border);
+  }
+  .author-name {
+    font-weight: 700;
+  }
+  .article-cover {
+    margin-bottom: 2rem;
+  }
+  .article-cover img {
+    width: 100%;
+    border-radius: var(--radius);
+    display: block;
+  }
+
+  .prose {
+    line-height: 1.9;
+  }
+  .prose :global(h2) {
+    font-size: 1.35rem;
+    margin: 2.2rem 0 0.9rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .prose :global(h3) {
+    font-size: 1.15rem;
+    margin: 1.8rem 0 0.7rem;
+  }
+  .prose :global(p) {
+    margin-bottom: 1.2rem;
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 1.2rem 1.4rem;
+  }
+  .prose :global(li) {
+    margin-bottom: 0.4rem;
+  }
+  .prose :global(strong) {
+    color: var(--color-primary-soft);
+  }
+  .prose :global(a) {
+    text-decoration: underline;
+  }
+  .prose :global(blockquote) {
+    border-left: 3px solid var(--color-accent);
+    padding-left: 1rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.2rem;
+  }
+  .prose :global(img) {
+    max-width: 100%;
+    border-radius: var(--radius);
+  }
+
+  .author-more {
+    margin-top: 3rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+</style>

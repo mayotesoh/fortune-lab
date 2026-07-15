@@ -1,0 +1,202 @@
+---
+const base = import.meta.env.BASE_URL;
+const withBase = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+
+// タブ構成：ホーム・占い師・ブログ・予約
+const links = [
+  { href: withBase('/'), label: 'ホーム' },
+  { href: withBase('/tellers'), label: '占い師' },
+  { href: withBase('/blog'), label: 'ブログ' },
+  { href: withBase('/reserve'), label: '予約' },
+];
+---
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href={base}>
+      <span class="brand-mark">☾</span>
+      <span class="brand-name">Fortune&nbsp;Lab</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      type="button"
+      aria-label="メニューを開く"
+      aria-expanded="false"
+      aria-controls="site-nav"
+    >
+      <span class="nav-toggle-bar"></span>
+      <span class="nav-toggle-bar"></span>
+      <span class="nav-toggle-bar"></span>
+    </button>
+
+    <nav class="nav" id="site-nav">
+      {links.map((l) => <a href={l.href}>{l.label}</a>)}
+      <a class="nav-cta" href={withBase('/reserve')}>鑑定を予約</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(10px);
+    background: rgba(247, 245, 251, 0.82);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: 0.06em;
+  }
+  .brand:hover {
+    color: var(--color-text);
+  }
+  .brand-mark {
+    color: var(--color-accent);
+    font-size: 1.15em;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    font-size: 0.95rem;
+  }
+  .nav a {
+    color: var(--color-text-muted);
+  }
+  .nav a:hover {
+    color: var(--color-primary-soft);
+  }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--color-primary-soft), var(--color-primary));
+    color: #fff !important;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+  .nav-cta:hover {
+    color: #fff !important;
+    box-shadow: 0 6px 16px rgba(95, 67, 160, 0.32);
+  }
+
+  /* ハンバーガーボタン（PCでは非表示） */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .nav-toggle-bar {
+    display: block;
+    width: 24px;
+    height: 2px;
+    margin: 0 auto;
+    border-radius: 2px;
+    background: var(--color-text);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  @media (max-width: 780px) {
+    .nav-toggle {
+      display: flex;
+    }
+    .nav {
+      position: absolute;
+      top: 64px;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 0.5rem 0;
+      background: rgba(247, 245, 251, 0.98);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: max-height 0.28s ease, opacity 0.2s ease;
+    }
+    .nav.is-open {
+      max-height: 80vh;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .nav a {
+      padding: 0.85rem 1.25rem;
+      font-size: 1rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .nav a:first-child {
+      border-top: none;
+    }
+    .nav-cta {
+      margin: 0.6rem 1.25rem;
+      text-align: center;
+      border-radius: 999px;
+    }
+    .nav-toggle[aria-expanded='true'] .nav-toggle-bar:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .nav-toggle[aria-expanded='true'] .nav-toggle-bar:nth-child(2) {
+      opacity: 0;
+    }
+    .nav-toggle[aria-expanded='true'] .nav-toggle-bar:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.querySelector('.nav-toggle');
+  const nav = document.getElementById('site-nav');
+
+  if (toggle && nav) {
+    const setOpen = (open: boolean) => {
+      nav.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'メニューを閉じる' : 'メニューを開く');
+    };
+
+    toggle.addEventListener('click', () => {
+      setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+
+    nav.querySelectorAll('a').forEach((a) => {
+      a.addEventListener('click', () => setOpen(false));
+    });
+
+    document.addEventListener('click', (e) => {
+      if (
+        toggle.getAttribute('aria-expanded') === 'true' &&
+        !nav.contains(e.target as Node) &&
+        !toggle.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    });
+  }
+</script>
