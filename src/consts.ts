@@ -6,6 +6,16 @@ export const SITE_NAME_JA = 'フォーチュンラボ';
 export const SITE_TAGLINE = 'あなたの運命を照らす、オンライン占い館';
 
 /**
+ * 姉妹サイト（Branch）へのリンク
+ * Fortune Lab は相談者が鑑定を受けるサイト。
+ * Branch はここで活躍する占い師の学び・育成コミュニティ。
+ * ※ base が異なるため相手サイトへは絶対URLでリンクする。
+ */
+export const SISTER_SITE_URL = 'https://mayotesoh.github.io/Branch-site/';
+export const SISTER_SITE_NAME = 'Branch';
+export const SISTER_SITE_DESC = '占い師コミュニティ';
+
+/**
  * 公式LINE 友だち追加・予約・相談リンク
  * 未設定（空文字）なら、LINE関連のボタンは表示されません。
  */
