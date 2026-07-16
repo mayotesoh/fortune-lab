@@ -1,7 +1,7 @@
 // サイト全体で使う共通定数
 
 /** サイト名・キャッチ */
-export const SITE_NAME = 'Fortune Lab';
+export const SITE_NAME = 'Fortune Lab☆！';
 export const SITE_NAME_JA = 'フォーチュンラボ';
 export const SITE_TAGLINE = 'あなたの運命を照らす、オンライン占い館';
 
