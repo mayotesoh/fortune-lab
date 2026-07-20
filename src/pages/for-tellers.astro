@@ -1,0 +1,277 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Stars from '../components/Stars.astro';
+import { SISTER_SITE_URL, SISTER_SITE_NAME, LINE_URL } from '../consts';
+
+const base = import.meta.env.BASE_URL;
+const link = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
+
+// 占い師志望者の「3つの動機」に寄り添う
+const pains = [
+  {
+    icon: '🌱',
+    title: '占いに興味があり、学びたい',
+    desc: '「占ってみたい」その気持ちが第一歩。基礎から体系的に、仲間と一緒に学べます。',
+  },
+  {
+    icon: '🔮',
+    title: '占えるけれど、収益になっていない',
+    desc: '占術はあるのに稼げない――。集客・単価・リピートの「仕事にする技術」を身につけます。',
+  },
+  {
+    icon: '🧭',
+    title: '独学・我流の限界を感じている',
+    desc: '一人では見えない壁も、実践とフィードバックのある環境なら越えていけます。',
+  },
+];
+
+// Branch で得られること
+const gains = [
+  { no: '01', title: '学ぶ', desc: '占術の基礎から実践まで、体系立てて学べるカリキュラム。' },
+  { no: '02', title: '実践する', desc: '練習会・ロープレで場数を踏み、鑑定の「型」を身につける。' },
+  { no: '03', title: '収益化する', desc: '集客・活動の広げ方まで。占いを「仕事」にして稼ぐ道へ。' },
+];
+---
+
+<Layout
+  title={`占い師として活動したい方へ｜Fortune Lab☆！`}
+  description="占いに興味がある方、占術はあるのに収益になっていない方へ。稼げる占い師を育てる教育コミュニティ Branch をご紹介します。学び・実践・収益化までを仲間とともに。"
+>
+  <!-- Hero（夜空） -->
+  <section class="hero night on-night">
+    <Stars />
+    <div class="container hero-inner">
+      <p class="hero-eyebrow">占い師として活動したい方へ</p>
+      <h1 class="hero-title">
+        好きな占いを、<br />&quot;収入&quot;に変える。
+      </h1>
+      <p class="hero-lead">
+        「占ってみたい」「占えるのに稼げない」――そんなあなたへ。<br />
+        Fortune Lab☆！ の姉妹コミュニティ <strong>{SISTER_SITE_NAME}</strong>
+        は、稼げる占い師を育てる教育コミュニティです。
+      </p>
+      <div class="hero-actions">
+        <a
+          class="btn btn-gold"
+          href={SISTER_SITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >{SISTER_SITE_NAME} を見てみる ↗</a>
+        <a class="btn btn-ghost" href="#branch">くわしく知る</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- こんな方へ -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">こんな<span class="mark">方へ</span></h2>
+      <p class="section-lead">ひとつでも当てはまれば、あなたに向いています</p>
+      <div class="pain-grid">
+        {
+          pains.map((p) => (
+            <article class="card">
+              <span class="card-icon">{p.icon}</span>
+              <h3>{p.title}</h3>
+              <p>{p.desc}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Branch とは -->
+  <section class="section section-alt" id="branch">
+    <div class="container">
+      <h2 class="section-title">{SISTER_SITE_NAME}<span class="mark">で得られること</span></h2>
+      <p class="section-lead">学ぶ → 実践する → 収益化する。占いを仕事にする3ステップ</p>
+      <div class="gain-grid">
+        {
+          gains.map((g) => (
+            <article class="step">
+              <span class="step-no">{g.no}</span>
+              <h3>{g.title}</h3>
+              <p>{g.desc}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ラボとのつながり -->
+  <section class="section">
+    <div class="container narrow-mid">
+      <h2 class="section-title">活躍の場は、<span class="mark">ここにあります</span></h2>
+      <p class="bridge-text">
+        Fortune Lab☆！ で相談者を鑑定する占い師たちも、学びと実践を重ねてきた仲間です。<br />
+        {SISTER_SITE_NAME} で力をつけ、Fortune Lab☆！ という活躍の舞台へ。<br />
+        「学ぶ場所」と「活躍する場所」がつながっているから、目指す先が明確です。
+      </p>
+      <div class="center-more">
+        <a class="btn btn-primary" href={link('/tellers')}>活躍中の占い師を見る →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA（夜空） -->
+  <section class="cta night on-night">
+    <Stars />
+    <div class="container cta-inner">
+      <h2>占う側に、なりませんか。</h2>
+      <p>まずは {SISTER_SITE_NAME} をのぞいてみてください。あなたの一歩を、仲間が待っています。</p>
+      <div class="cta-actions">
+        <a
+          class="btn btn-gold"
+          href={SISTER_SITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >{SISTER_SITE_NAME} を見てみる ↗</a>
+        {
+          LINE_URL && (
+            <a class="btn btn-ghost" href={LINE_URL} target="_blank" rel="noopener noreferrer">
+              LINEで相談する
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    padding-block: 6.5rem 5.5rem;
+    text-align: center;
+  }
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+  }
+  .hero-eyebrow {
+    color: var(--color-accent);
+    letter-spacing: 0.28em;
+    font-size: 0.82rem;
+    margin-bottom: 1.2rem;
+  }
+  .hero-title {
+    font-size: clamp(2.1rem, 6.2vw, 3.5rem);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.03em;
+    word-break: keep-all;
+    line-break: strict;
+  }
+  .hero-lead {
+    color: var(--color-night-muted);
+    max-width: 640px;
+    margin-inline: auto;
+    margin-bottom: 2.5rem;
+  }
+  .hero-lead strong {
+    color: var(--color-accent);
+  }
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .section-alt {
+    background: var(--color-bg-soft);
+    border-block: 1px solid var(--color-border);
+  }
+  .center-more {
+    text-align: center;
+    margin-top: 2.5rem;
+  }
+
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.8rem;
+    text-align: center;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow);
+  }
+  .card-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.7rem;
+  }
+  .card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.12rem;
+  }
+  .card p {
+    color: var(--color-text-muted);
+    font-size: 0.92rem;
+  }
+
+  .gain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  .step {
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .step-no {
+    font-family: var(--font-serif);
+    font-size: 2.4rem;
+    color: var(--color-accent);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .step h3 {
+    margin-bottom: 0.5rem;
+  }
+  .step p {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  .narrow-mid {
+    max-width: 720px;
+  }
+  .bridge-text {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 1.02rem;
+  }
+
+  .cta {
+    padding-block: 5rem;
+    text-align: center;
+  }
+  .cta-inner {
+    position: relative;
+    z-index: 1;
+  }
+  .cta-inner h2 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin-bottom: 1rem;
+  }
+  .cta-inner p {
+    color: var(--color-night-muted);
+    margin-bottom: 2rem;
+  }
+  .cta-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>

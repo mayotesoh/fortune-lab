@@ -163,6 +163,20 @@ const steps = [
     )
   }
 
+  <!-- 占い師を目指す方へ（ブランチ導線） -->
+  <section class="section">
+    <div class="container">
+      <a class="tellers-band" href={link('/for-tellers')}>
+        <div class="tellers-band-text">
+          <span class="tellers-band-eyebrow">占う側になりたい方へ</span>
+          <strong class="tellers-band-title">好きな占いを、&quot;収入&quot;に変える。</strong>
+          <span class="tellers-band-desc">占いに興味がある／占えるのに稼げていない――そんな方へ。学び・実践・収益化まで。</span>
+        </div>
+        <span class="tellers-band-cta">くわしく見る →</span>
+      </a>
+    </div>
+  </section>
+
   <!-- CTA（夜空） -->
   <section class="cta night on-night">
     <Stars />
@@ -400,6 +414,51 @@ const steps = [
   .post-excerpt {
     color: var(--color-text-muted);
     font-size: 0.92rem;
+  }
+
+  /* 占い師を目指す方へ（導線バンド） */
+  .tellers-band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, var(--color-bg-soft), var(--color-surface));
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.8rem 2rem;
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .tellers-band:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+    border-color: var(--color-accent);
+    color: inherit;
+  }
+  .tellers-band-text {
+    display: grid;
+    gap: 0.35rem;
+  }
+  .tellers-band-eyebrow {
+    color: var(--color-accent-soft);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+  .tellers-band-title {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+  }
+  .tellers-band-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+  .tellers-band-cta {
+    flex-shrink: 0;
+    font-weight: 700;
+    color: var(--color-primary-soft);
+    white-space: nowrap;
   }
 
   /* CTA */

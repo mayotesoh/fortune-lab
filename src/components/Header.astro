@@ -1,5 +1,4 @@
 ---
-import { SISTER_SITE_URL, SISTER_SITE_NAME } from '../consts';
 const base = import.meta.env.BASE_URL;
 const withBase = (p: string) => `${base.replace(/\/$/, '')}/${p.replace(/^\//, '')}`;
 
@@ -33,14 +32,7 @@ const links = [
 
     <nav class="nav" id="site-nav">
       {links.map((l) => <a href={l.href}>{l.label}</a>)}
-      <a
-        class="nav-sister"
-        href={SISTER_SITE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        占い師の方へ｜{SISTER_SITE_NAME} ↗
-      </a>
+      <a class="nav-sister" href={withBase('/for-tellers')}>占い師になりたい方へ</a>
       <a class="nav-cta" href={withBase('/reserve')}>鑑定を予約</a>
     </nav>
   </div>
