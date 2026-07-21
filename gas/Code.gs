@@ -88,6 +88,13 @@ function appendReservation(r) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
+    // 二重予約チェック（ロック内で確認 → 同期まで済ませてから解放）
+    if (isSlotTaken_(r.tellerPageId, r.date, r.time)) {
+      throw new Error(
+        '申し訳ありません。その時間はちょうど予約が入りました。別の時間をお選びください。'
+      );
+    }
+
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheets()[0];
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(HEADERS);
@@ -104,15 +111,16 @@ function appendReservation(r) {
       r.time || '',
       r.note || '',
     ]);
+
+    // Notion「鑑定予約DB」にも同期（失敗してもスプシ記録は成立させる）。
+    // ロック内で同期し、次の予約の空き枠チェックに反映されるようにする。
+    try {
+      syncReservationToNotion(r); // NotionSync.gs
+    } catch (err) {
+      console.error('Notion同期に失敗しました: ' + (err && err.message ? err.message : err));
+    }
   } finally {
     lock.releaseLock();
-  }
-
-  // Notion「鑑定予約DB」にも同期（失敗してもスプシ記録は成立させる）
-  try {
-    syncReservationToNotion(r); // NotionSync.gs
-  } catch (err) {
-    console.error('Notion同期に失敗しました: ' + (err && err.message ? err.message : err));
   }
 }
 
@@ -126,9 +134,28 @@ function resetHeaders() {
   sheet.appendRow(HEADERS);
 }
 
-/** GET: 動作確認用 */
-function doGet() {
-  return jsonOutput({ status: 'ok', message: 'Fortune Lab 予約API は稼働中です。' });
+/**
+ * GET エントリーポイント
+ *   ?action=slots&teller=<占い師ページID>&date=YYYY-MM-DD … 空き枠を返す
+ *   （それ以外）… 動作確認メッセージ
+ */
+function doGet(e) {
+  try {
+    const params = (e && e.parameter) || {};
+    if (params.action === 'slots') {
+      const result = getAvailableSlots(
+        (params.teller || '').toString(),
+        (params.date || '').toString()
+      );
+      return jsonOutput({ status: 'success', slots: result.slots, closed: !!result.closed });
+    }
+    return jsonOutput({ status: 'ok', message: 'Fortune Lab 予約API は稼働中です。' });
+  } catch (err) {
+    return jsonOutput({
+      status: 'error',
+      message: err && err.message ? err.message : String(err),
+    });
+  }
 }
 
 /** JSON レスポンス共通関数 */

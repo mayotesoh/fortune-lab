@@ -118,7 +118,7 @@ for (let h = 10; h <= 21; h++) {
 <!-- LIFF SDK -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" is:inline></script>
 
-<script define:vars={{ GAS_URL, LIFF_ID }}>
+<script define:vars={{ GAS_URL, LIFF_ID, FALLBACK_SLOTS: timeSlots }}>
   const form = document.getElementById('reserve-form');
   const nameInput = document.getElementById('userName');
   const nameField = document.getElementById('name-field');
@@ -156,6 +156,66 @@ for (let h = 10; h <= 21; h++) {
     resultEl.textContent = message;
     resultEl.className = 'result ' + (type || '');
   }
+
+  // ---- 占い師別・空き時間の動的読み込み ----
+  const timeSelect = document.getElementById('time');
+
+  function renderTimeOptions(slots, keep, placeholder) {
+    timeSelect.innerHTML = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.disabled = true;
+    ph.selected = true;
+    ph.textContent = placeholder || '時間を選択';
+    timeSelect.appendChild(ph);
+    (slots || []).forEach((s) => {
+      const o = document.createElement('option');
+      o.value = s;
+      o.textContent = s;
+      if (s === keep) {
+        o.selected = true;
+        ph.selected = false;
+      }
+      timeSelect.appendChild(o);
+    });
+  }
+
+  async function loadSlots() {
+    const date = dateInput.value;
+    if (!date) return;
+    const keep = timeSelect.value;
+    renderTimeOptions([], '', '空き時間を確認中…');
+    try {
+      const pageId = tellerSelect.value || '';
+      const url =
+        GAS_URL +
+        '?action=slots&teller=' +
+        encodeURIComponent(pageId) +
+        '&date=' +
+        encodeURIComponent(date);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.status === 'success') {
+        if (!data.slots || data.slots.length === 0) {
+          renderTimeOptions(
+            [],
+            '',
+            data.closed ? 'この日は受付していません' : '空き時間がありません'
+          );
+        } else {
+          renderTimeOptions(data.slots, keep, '時間を選択');
+        }
+      } else {
+        // APIエラー時は従来の全枠を表示（予約は可能に）
+        renderTimeOptions(FALLBACK_SLOTS, keep, '時間を選択');
+      }
+    } catch (e) {
+      renderTimeOptions(FALLBACK_SLOTS, keep, '時間を選択');
+    }
+  }
+
+  tellerSelect.addEventListener('change', loadSlots);
+  dateInput.addEventListener('change', loadSlots);
 
   // LIFF 初期化（LIFF_ID 未設定なら Web予約モード）
   async function initLiff() {
