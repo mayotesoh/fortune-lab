@@ -30,6 +30,8 @@ const HEADERS = [
 
 /**
  * POST エントリーポイント
+ *   { action:'checkout', ... } … Stripe決済ページURLを返す（Payment.gs）
+ *   （それ以外）                … 前払いなしで予約を確定
  */
 function doPost(e) {
   try {
@@ -37,6 +39,9 @@ function doPost(e) {
       throw new Error('リクエストボディが空です。');
     }
     const data = JSON.parse(e.postData.contents);
+    if (data.action === 'checkout') {
+      return handleCheckout(data); // Payment.gs
+    }
     return handleFormReservation(data);
   } catch (err) {
     return jsonOutput({
@@ -46,11 +51,9 @@ function doPost(e) {
   }
 }
 
-/**
- * サイトフォーム / LIFF からの予約を処理
- */
-function handleFormReservation(data) {
-  const r = {
+/** data（フォーム or Stripe metadata）→ 予約オブジェクトに正規化 */
+function normalizeReservation_(data) {
+  return {
     userName: (data.userName || '').toString(),
     userId: (data.userId || '').toString(),
     email: (data.email || '').toString(),
@@ -62,8 +65,10 @@ function handleFormReservation(data) {
     time: (data.time || '').toString(),
     note: (data.note || '').toString(),
   };
+}
 
-  // 必須チェック
+/** 必須・形式チェック（不正なら throw） */
+function validateReservation_(r) {
   if (!r.userId || !r.menu || !r.date || !r.time) {
     throw new Error('必須項目が不足しています（userId / menu / date / time）。');
   }
@@ -76,20 +81,34 @@ function handleFormReservation(data) {
   if (!/^\d{2}:\d{2}$/.test(r.time)) {
     throw new Error('time の形式が不正です（HH:MM）。');
   }
+}
 
+/** サイトフォーム / LIFF からの予約を処理（前払いなし） */
+function handleFormReservation(data) {
+  const r = normalizeReservation_(data);
+  validateReservation_(r);
   appendReservation(r);
   return jsonOutput({ status: 'success' });
 }
 
-/**
- * 予約1行をスプレッドシートに追記し、Notionにも同期
- */
+/** 前払いなしの予約確定（空き枠チェックあり） */
 function appendReservation(r) {
+  recordReservation_(r, { check: true });
+}
+
+/**
+ * 予約1件を記録（スプレッドシート追記 ＋ Notion同期）。ロックで直列化。
+ * @param {Object} r 予約オブジェクト（r.amount / r.stripeSessionId は決済時のみ）
+ * @param {{check?:boolean, paid?:boolean}} opts
+ *        check: 記録前に二重予約チェックして重複なら throw（前払いなしの直接予約用）
+ *        paid : 決済済みとしてNotionに金額・決済IDを記録
+ */
+function recordReservation_(r, opts) {
+  opts = opts || {};
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    // 二重予約チェック（ロック内で確認 → 同期まで済ませてから解放）
-    if (isSlotTaken_(r.tellerPageId, r.date, r.time)) {
+    if (opts.check && isSlotTaken_(r.tellerPageId, r.date, r.time)) {
       throw new Error(
         '申し訳ありません。その時間はちょうど予約が入りました。別の時間をお選びください。'
       );
@@ -115,7 +134,7 @@ function appendReservation(r) {
     // Notion「鑑定予約DB」にも同期（失敗してもスプシ記録は成立させる）。
     // ロック内で同期し、次の予約の空き枠チェックに反映されるようにする。
     try {
-      syncReservationToNotion(r); // NotionSync.gs
+      syncReservationToNotion(r, opts); // NotionSync.gs
     } catch (err) {
       console.error('Notion同期に失敗しました: ' + (err && err.message ? err.message : err));
     }
@@ -148,6 +167,9 @@ function doGet(e) {
         (params.date || '').toString()
       );
       return jsonOutput({ status: 'success', slots: result.slots, closed: !!result.closed });
+    }
+    if (params.action === 'confirm') {
+      return confirmCheckout((params.session_id || '').toString()); // Payment.gs
     }
     return jsonOutput({ status: 'ok', message: 'Fortune Lab 予約API は稼働中です。' });
   } catch (err) {

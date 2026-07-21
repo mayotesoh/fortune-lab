@@ -52,12 +52,14 @@
 - 未設定でも既定営業枠（毎日10:00〜21:30）で動くのでフォームは止まらない
 - 将来：LINE内予約（LIFF）でも同じ空き枠APIを利用
 
-### ③ 決済（前払い方式で no-show を削減）
-**方針**：Stripe（Payment Links / Checkout）。サイトでもLINE webviewでも同じリンクで動く。Apple/Google Pay対応。手数料の目安 約3.6%（※要確認）。
-- 予約確定時に前払い → 人手のノーショー対応を削減
-- 将来 LINE Pay 追加も検討
-- ノーコード希望なら STORES予約（決済つき）が代替
-- **Stripeアカウントは後から切り替え可**（実装はAPIキー/リンクを差し替えるだけ。テスト→本番、法人化での付け替えも容易）
+### ③ 決済（前払い方式で no-show を削減）← コード実装済み・設定待ち
+**方針（採用）**：Stripe Checkout。占い師ごとの料金（全額前払い）。GASがCheckoutセッションを作り、支払い後に完了ページで入金確認→予約を「支払済み」で作成。
+- 実装済み：`gas/Payment.gs`（Checkout作成/入金確認）、`gas/Code.gs`（doPostにcheckout分岐、doGetにconfirm）、`gas/NotionSync.gs`（決済状態/金額/決済ID）、`src/pages/reserve.astro`（支払いへ）、`src/pages/reserve/complete.astro`（完了ページ）
+- Notion設定済み：占い師DBに「鑑定料金」（碧井10000/夜船8000/沙織9000）、予約DBに「決済状態/金額/決済ID」
+- **残作業（運用側）**：`docs/決済設定.md` の手順で Stripeキーを GAS に登録＋再デプロイ。まずテストモード
+- `STRIPE_SECRET_KEY` 未設定なら従来どおり前払いなしで予約（段階移行可）
+- **Stripeアカウントは後から切り替え可**（キー差し替えのみ）
+- 将来：100%自動化のため Stripe Webhook 追加、メニュー別/時間別料金、LINE Pay
 
 ### ④ 公式LINE強化
 - リッチメニュー（予約 / 占い師一覧 / ブログ / 占い師になりたい方へ）

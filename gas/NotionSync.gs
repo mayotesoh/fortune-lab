@@ -29,7 +29,8 @@ function getNotionToken_() {
  *          tellerPageId:string,tellerName:string,menu:string,
  *          date:string,time:string,note:string}} r
  */
-function syncReservationToNotion(r) {
+function syncReservationToNotion(r, opts) {
+  opts = opts || {};
   const token = getNotionToken_();
   if (!token) {
     console.warn('NOTION_TOKEN 未設定のため Notion 同期をスキップ');
@@ -50,6 +51,14 @@ function syncReservationToNotion(r) {
   // 希望占い師（占い師DBページIDが渡ってきた場合のみリレーションを設定）
   if (r.tellerPageId) {
     properties['希望占い師'] = { relation: [{ id: r.tellerPageId }] };
+  }
+  // 決済情報（Stripe前払い済みのとき）
+  if (opts.paid) {
+    properties['決済状態'] = { select: { name: '支払済み' } };
+    if (r.amount) properties['金額'] = { number: Number(r.amount) };
+    if (r.stripeSessionId) {
+      properties['決済ID'] = { rich_text: [{ text: { content: r.stripeSessionId } }] };
+    }
   }
 
   const res = UrlFetchApp.fetch('https://api.notion.com/v1/pages', {
