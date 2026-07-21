@@ -162,6 +162,9 @@ for (let h = 10; h <= 21; h++) {
     if (!LIFF_ID || typeof liff === 'undefined') return;
     try {
       await liff.init({ liffId: LIFF_ID });
+      // LINEアプリ内（LIFFで開かれた時）だけプロフィールで自動入力する。
+      // 通常のWebブラウザではログインを強制せず、Web予約モードのまま動かす。
+      if (!liff.isInClient()) return;
       if (!liff.isLoggedIn()) {
         liff.login();
         return;

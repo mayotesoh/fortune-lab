@@ -19,7 +19,7 @@ export const SISTER_SITE_DESC = '占い師コミュニティ';
  * 公式LINE 友だち追加・予約・相談リンク
  * 未設定（空文字）なら、LINE関連のボタンは表示されません。
  */
-export const LINE_URL = '';
+export const LINE_URL = 'https://lin.ee/rGGCtFe';
 
 /** LINEボタンの既定ラベル */
 export const LINE_LABEL = 'LINEで相談する';
@@ -37,7 +37,7 @@ export const GAS_URL = 'https://script.google.com/macros/s/AKfycbwuK4iLVY-fHX0su
  * 未設定（空文字）の場合は、LINE外からの利用とみなして
  * 名前を手入力する「Web予約モード」で動作します。
  */
-export const LIFF_ID = '';
+export const LIFF_ID = '2010514423-BkWdU821';
 
 /** 鑑定メニュー（予約フォーム / 鑑定予約DBの「鑑定メニュー」と揃える） */
 export const MENU_TYPES = [
