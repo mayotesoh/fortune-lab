@@ -46,6 +46,7 @@ function syncReservationToNotion(r, opts) {
   if (r.email) properties['メール'] = { email: r.email };
   if (r.phone) properties['電話番号'] = { phone_number: r.phone };
   if (r.date) properties['日付'] = { date: { start: r.date } };
+  if (r.duration) properties['所要分'] = { number: Number(r.duration) };
   if (r.menu) properties['鑑定メニュー'] = { select: { name: r.menu } };
   if (r.note) properties['備考'] = { rich_text: [{ text: { content: r.note } }] };
   // 希望占い師（占い師DBページIDが渡ってきた場合のみリレーションを設定）

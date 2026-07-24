@@ -58,7 +58,7 @@ function handleCheckout(data) {
   }
 
   // 空き枠の最終確認（決済ページに送る前）
-  if (isSlotTaken_(r.tellerPageId, r.date, r.time)) {
+  if (isSlotTaken_(r.tellerPageId, r.date, r.time, r.duration)) {
     throw new Error('その時間はちょうど予約が入りました。恐れ入りますが別の時間をお選びください。');
   }
 
@@ -70,7 +70,8 @@ function handleCheckout(data) {
   }
 
   const productName =
-    (r.tellerName ? r.tellerName : 'おまかせ') + ' / ' + r.menu + '（' + r.date + ' ' + r.time + '）';
+    (r.tellerName ? r.tellerName : 'おまかせ') + ' / ' + r.menu +
+    '（' + r.date + ' ' + r.time + '〜' + r.duration + '分）';
 
   const payload = {
     mode: 'payment',
@@ -95,6 +96,7 @@ function handleCheckout(data) {
     menu: r.menu,
     date: r.date,
     time: r.time,
+    duration: String(r.duration),
     note: (r.note || '').slice(0, 480),
     amount: String(amount),
   };
@@ -149,7 +151,7 @@ function confirmCheckout(sessionId) {
   r.stripeSessionId = sessionId;
 
   // 二重予約なら拒否せず記録し、備考に注意書き（支払い済みを絶対に失わない）
-  if (isSlotTaken_(r.tellerPageId, r.date, r.time)) {
+  if (isSlotTaken_(r.tellerPageId, r.date, r.time, r.duration)) {
     r.note = '⚠️枠重複の可能性（要確認） ' + (r.note || '');
   }
   recordReservation_(r, { paid: true });

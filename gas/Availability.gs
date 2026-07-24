@@ -19,8 +19,15 @@
 // 占い師DB の Database ID（機密ではない）
 const NOTION_TELLER_DB = '507fd75b0aa94c48a259d05b6b211ea4';
 
-// 1枠の分数
-const SLOT_MINUTES = 30;
+// 予約開始時刻の刻み（分）※10分刻みで選べる
+const SLOT_MINUTES = 10;
+
+// 鑑定と鑑定の間に必ず空ける時間（分）。連続鑑定のインターバル。
+const BUFFER_MINUTES = 10;
+
+// 選べる所要時間（分）と既定値
+const DURATION_OPTIONS = [30, 60, 90];
+const DEFAULT_DURATION = 60;
 
 /** 占い師の営業枠が未設定のときの既定値（＝とりあえず予約を受けられる状態） */
 function DEFAULT_OPEN_() {
@@ -38,50 +45,79 @@ function weekdayJa_(dateStr) {
   return ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
 }
 
-/** 営業時間（時）から30分刻みの開始時刻リストを生成 */
-function genSlots_(startHour, endHour) {
-  const out = [];
-  for (let t = startHour * 60; t + SLOT_MINUTES <= endHour * 60; t += SLOT_MINUTES) {
-    out.push(pad2_(Math.floor(t / 60)) + ':' + pad2_(t % 60));
-  }
-  return out;
+/** "HH:MM" → 0時からの分 */
+function hmToMin_(hm) {
+  const p = String(hm).split(':');
+  return Number(p[0]) * 60 + Number(p[1]);
+}
+
+/** 0時からの分 → "HH:MM" */
+function minToHm_(t) {
+  return pad2_(Math.floor(t / 60)) + ':' + pad2_(t % 60);
+}
+
+/** 所要時間を正規化（不正なら既定値） */
+function normalizeDuration_(d) {
+  const n = Number(d);
+  return DURATION_OPTIONS.indexOf(n) !== -1 ? n : DEFAULT_DURATION;
 }
 
 /**
  * 空き枠を返すメイン関数
+ *   開始時刻は SLOT_MINUTES（10分）刻み。所要時間ぶんの枠を確保し、
+ *   前後に BUFFER_MINUTES のインターバルを空けられる時刻だけを返す。
  * @param {string} tellerPageId 占い師DBのページID（空なら「おまかせ」＝既定営業枠）
  * @param {string} date YYYY-MM-DD
- * @return {{slots:string[], closed?:boolean, reason?:string}}
+ * @param {number} durationMin 所要時間（分）
+ * @return {{slots:string[], closed?:boolean, reason?:string, duration:number}}
  */
-function getAvailableSlots(tellerPageId, date) {
+function getAvailableSlots(tellerPageId, date, durationMin) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new Error('date の形式が不正です（YYYY-MM-DD）。');
   }
-
+  const dur = normalizeDuration_(durationMin);
   const av = tellerPageId ? getTellerAvailability_(tellerPageId) : DEFAULT_OPEN_();
 
   // 休業日
   if (av.holidays.indexOf(date) !== -1) {
-    return { slots: [], closed: true, reason: 'holiday' };
+    return { slots: [], closed: true, reason: 'holiday', duration: dur };
   }
   // 受付曜日外
   if (av.days.indexOf(weekdayJa_(date)) === -1) {
-    return { slots: [], closed: true, reason: 'weekday' };
+    return { slots: [], closed: true, reason: 'weekday', duration: dur };
   }
 
-  const base = genSlots_(av.startHour, av.endHour);
-  const booked = tellerPageId ? getBookedTimes_(tellerPageId, date) : [];
+  const openStart = av.startHour * 60;
+  const openEnd = av.endHour * 60;
+  const booked = tellerPageId ? getBookedIntervals_(tellerPageId, date) : [];
 
   const todayJst = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
-  const nowHm = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'HH:mm');
+  const nowMin = hmToMin_(Utilities.formatDate(new Date(), 'Asia/Tokyo', 'HH:mm'));
 
-  const slots = base.filter(function (s) {
-    if (booked.indexOf(s) !== -1) return false; // 既存予約
-    if (date === todayJst && s <= nowHm) return false; // 当日の過去時刻
-    return true;
-  });
+  const slots = [];
+  for (let t = openStart; t + dur <= openEnd; t += SLOT_MINUTES) {
+    if (date === todayJst && t <= nowMin) continue; // 当日の過去時刻
+    if (!isFree_(t, dur, booked)) continue; // 既存予約＋インターバルと衝突
+    slots.push(minToHm_(t));
+  }
+  return { slots: slots, duration: dur };
+}
 
-  return { slots: slots };
+/**
+ * [start, start+dur) が既存予約と重ならず、前後に BUFFER_MINUTES 空くか
+ * @param {number} start 開始（分）
+ * @param {number} dur 所要（分）
+ * @param {{s:number,e:number}[]} booked 既存予約の区間
+ */
+function isFree_(start, dur, booked) {
+  const end = start + dur;
+  for (let i = 0; i < booked.length; i++) {
+    const b = booked[i];
+    // 「新規の終了＋インターバル ≦ 既存の開始」か「既存の終了＋インターバル ≦ 新規の開始」なら共存可
+    const ok = end + BUFFER_MINUTES <= b.s || b.e + BUFFER_MINUTES <= start;
+    if (!ok) return false;
+  }
+  return true;
 }
 
 /** 占い師の営業枠を Notion 占い師DB のページから取得（未設定は既定値で補完） */
@@ -119,8 +155,11 @@ function getTellerAvailability_(pageId) {
   };
 }
 
-/** その占い師・その日の「予約済み時刻」一覧を Notion 鑑定予約DB から取得 */
-function getBookedTimes_(tellerPageId, date) {
+/**
+ * その占い師・その日の「予約済み区間」を Notion 鑑定予約DB から取得
+ * @return {{s:number,e:number}[]} 開始/終了（0時からの分）
+ */
+function getBookedIntervals_(tellerPageId, date) {
   const token = getNotionToken_();
   if (!token) return [];
 
@@ -145,23 +184,37 @@ function getBookedTimes_(tellerPageId, date) {
   if (res.getResponseCode() < 200 || res.getResponseCode() >= 300) return [];
 
   const rows = (JSON.parse(res.getContentText()) || {}).results || [];
-  return rows
-    .map(function (r) {
-      const t = r.properties && r.properties['時間'];
-      return ((t && t.rich_text) || []).map(function (x) { return x.plain_text; }).join('');
-    })
-    .filter(function (s) { return /^\d{2}:\d{2}$/.test(s); });
+  const out = [];
+  rows.forEach(function (r) {
+    const props = r.properties || {};
+    const t = props['時間'];
+    const hm = ((t && t.rich_text) || []).map(function (x) { return x.plain_text; }).join('');
+    if (!/^\d{2}:\d{2}$/.test(hm)) return;
+    // 所要分が未設定の古い予約は既定値で扱う
+    const d =
+      props['所要分'] && typeof props['所要分'].number === 'number' && props['所要分'].number > 0
+        ? props['所要分'].number
+        : DEFAULT_DURATION;
+    const s = hmToMin_(hm);
+    out.push({ s: s, e: s + d });
+  });
+  return out;
 }
 
-/** 送信時の二重予約チェック用：その枠が既に埋まっているか */
-function isSlotTaken_(tellerPageId, date, time) {
+/**
+ * 送信時の二重予約チェック用：その枠が確保できないか
+ * @param {number} durationMin 所要時間（分）
+ */
+function isSlotTaken_(tellerPageId, date, time, durationMin) {
   if (!tellerPageId) return false; // おまかせは占い師確定後に調整
-  return getBookedTimes_(tellerPageId, date).indexOf(time) !== -1;
+  if (!/^\d{2}:\d{2}$/.test(String(time))) return false;
+  const dur = normalizeDuration_(durationMin);
+  return !isFree_(hmToMin_(time), dur, getBookedIntervals_(tellerPageId, date));
 }
 
 /** 【動作確認用】空き枠を取得してログ出力 */
 function testAvailability() {
   const date = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
-  const result = getAvailableSlots('', date); // 占い師おまかせ＝既定営業枠
+  const result = getAvailableSlots('', date, 60); // 占い師おまかせ＝既定営業枠 / 60分
   console.log(JSON.stringify(result));
 }

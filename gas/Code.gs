@@ -63,6 +63,7 @@ function normalizeReservation_(data) {
     menu: (data.menu || '').toString(),
     date: (data.date || '').toString(),
     time: (data.time || '').toString(),
+    duration: normalizeDuration_(data.duration), // 所要時間（分）
     note: (data.note || '').toString(),
   };
 }
@@ -80,6 +81,9 @@ function validateReservation_(r) {
   }
   if (!/^\d{2}:\d{2}$/.test(r.time)) {
     throw new Error('time の形式が不正です（HH:MM）。');
+  }
+  if (DURATION_OPTIONS.indexOf(Number(r.duration)) === -1) {
+    throw new Error('所要時間が不正です（' + DURATION_OPTIONS.join('/') + '分）。');
   }
 }
 
@@ -108,7 +112,7 @@ function recordReservation_(r, opts) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    if (opts.check && isSlotTaken_(r.tellerPageId, r.date, r.time)) {
+    if (opts.check && isSlotTaken_(r.tellerPageId, r.date, r.time, r.duration)) {
       throw new Error(
         '申し訳ありません。その時間はちょうど予約が入りました。別の時間をお選びください。'
       );
@@ -164,9 +168,15 @@ function doGet(e) {
     if (params.action === 'slots') {
       const result = getAvailableSlots(
         (params.teller || '').toString(),
-        (params.date || '').toString()
+        (params.date || '').toString(),
+        params.duration
       );
-      return jsonOutput({ status: 'success', slots: result.slots, closed: !!result.closed });
+      return jsonOutput({
+        status: 'success',
+        slots: result.slots,
+        closed: !!result.closed,
+        duration: result.duration,
+      });
     }
     if (params.action === 'confirm') {
       return confirmCheckout((params.session_id || '').toString()); // Payment.gs

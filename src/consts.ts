@@ -39,6 +39,15 @@ export const GAS_URL = 'https://script.google.com/macros/s/AKfycbwuK4iLVY-fHX0su
  */
 export const LIFF_ID = '2010514423-BkWdU821';
 
+/**
+ * 選べる鑑定時間（分）。GAS の Availability.gs の DURATION_OPTIONS と揃える。
+ * 選んだ時間ぶんの枠を確保し、前後にインターバル（既定10分）を空けて空き枠を出す。
+ */
+export const DURATIONS = [30, 60, 90];
+
+/** 予約の既定の鑑定時間（分） */
+export const DEFAULT_DURATION = 60;
+
 /** 鑑定メニュー（予約フォーム / 鑑定予約DBの「鑑定メニュー」と揃える） */
 export const MENU_TYPES = [
   '対面鑑定',

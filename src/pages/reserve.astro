@@ -1,17 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { GAS_URL, LIFF_ID, LINE_URL, MENU_TYPES } from '../consts';
+import { GAS_URL, LIFF_ID, LINE_URL, MENU_TYPES, DURATIONS, DEFAULT_DURATION } from '../consts';
 import { getTellers } from '../lib/notion';
 
 const tellers = await getTellers();
 
-// 予約可能な時間枠（10:00〜21:30 / 30分刻み）
+// APIに繋がらないとき用のフォールバック枠（10:00〜21:50 / 10分刻み）
 const timeSlots: string[] = [];
-for (let h = 10; h <= 21; h++) {
-  for (const m of ['00', '30']) {
-    timeSlots.push(`${String(h).padStart(2, '0')}:${m}`);
-  }
+for (let t = 10 * 60; t <= 21 * 60 + 50; t += 10) {
+  timeSlots.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`);
 }
+
+const durationLabel = (m: number) =>
+  m % 60 === 0 ? `${m / 60}時間` : m > 60 ? `${Math.floor(m / 60)}時間${m % 60}分` : `${m}分`;
 ---
 
 <Layout
@@ -73,6 +74,15 @@ for (let h = 10; h <= 21; h++) {
           <select id="menu" name="menu" required>
             <option value="" disabled selected>メニューを選択</option>
             {MENU_TYPES.map((m) => <option value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="duration">鑑定時間<span class="req">必須</span></label>
+          <select id="duration" name="duration" required>
+            {DURATIONS.map((m) => (
+              <option value={m} selected={m === DEFAULT_DURATION}>{durationLabel(m)}</option>
+            ))}
           </select>
         </div>
 
@@ -160,8 +170,17 @@ for (let h = 10; h <= 21; h++) {
 
   // ---- 占い師別・空き時間の動的読み込み ----
   const timeSelect = document.getElementById('time');
+  const durationSelect = document.getElementById('duration');
+
+  // "HH:MM" + 分 → 終了時刻 "HH:MM"
+  function endTime(hm, minutes) {
+    const [h, m] = hm.split(':').map(Number);
+    const t = h * 60 + m + Number(minutes);
+    return String(Math.floor(t / 60) % 24).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+  }
 
   function renderTimeOptions(slots, keep, placeholder) {
+    const dur = Number(durationSelect.value) || 60;
     timeSelect.innerHTML = '';
     const ph = document.createElement('option');
     ph.value = '';
@@ -172,7 +191,7 @@ for (let h = 10; h <= 21; h++) {
     (slots || []).forEach((s) => {
       const o = document.createElement('option');
       o.value = s;
-      o.textContent = s;
+      o.textContent = `${s} 〜 ${endTime(s, dur)}`;
       if (s === keep) {
         o.selected = true;
         ph.selected = false;
@@ -193,7 +212,9 @@ for (let h = 10; h <= 21; h++) {
         '?action=slots&teller=' +
         encodeURIComponent(pageId) +
         '&date=' +
-        encodeURIComponent(date);
+        encodeURIComponent(date) +
+        '&duration=' +
+        encodeURIComponent(durationSelect.value);
       const res = await fetch(url);
       const data = await res.json();
       if (data && data.status === 'success') {
@@ -217,6 +238,7 @@ for (let h = 10; h <= 21; h++) {
 
   tellerSelect.addEventListener('change', loadSlots);
   dateInput.addEventListener('change', loadSlots);
+  durationSelect.addEventListener('change', loadSlots); // 時間を変えると空き枠も変わる
 
   // 決済をキャンセルして戻ってきた場合の案内
   (function notifyCanceled() {
@@ -266,6 +288,7 @@ for (let h = 10; h <= 21; h++) {
     const menu = document.getElementById('menu').value;
     const date = dateInput.value;
     const time = document.getElementById('time').value;
+    const duration = Number(durationSelect.value);
     const note = document.getElementById('note').value.trim();
 
     const tellerOpt = tellerSelect.options[tellerSelect.selectedIndex];
@@ -300,7 +323,7 @@ for (let h = 10; h <= 21; h++) {
           action: 'checkout',
           userName, userId, email, phone,
           tellerPageId, tellerName,
-          menu, date, time, note,
+          menu, date, time, duration, note,
           completeUrl, cancelUrl,
         }),
       });
@@ -313,12 +336,12 @@ for (let h = 10; h <= 21; h++) {
         return;
       } else if (result.status === 'success') {
         // 前払いなし（Stripe未設定時）のフォールバック
-        showResult(`ご予約を受け付けました。（${menu} / ${date} ${time}）折り返しご連絡いたします。`, 'success');
+        showResult(`ご予約を受け付けました。（${menu} / ${date} ${time}〜 ${duration}分）折り返しご連絡いたします。`, 'success');
         form.reset();
         if (typeof liff !== 'undefined' && LIFF_ID && liff.isInClient && liff.isInClient()) {
           try {
             await liff.sendMessages([
-              { type: 'text', text: `予約しました：${menu} / ${date} ${time}` },
+              { type: 'text', text: `予約しました：${menu} / ${date} ${time}〜（${duration}分）` },
             ]);
           } catch (_) {}
           setTimeout(() => liff.closeWindow(), 1200);
